@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TopoWeave</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="TopoWeave is a retopology add-on for Blender: sketch strokes on a mesh and get a clean quad layout.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Bố cục: cam là nhân vật chính trên nền than ấm; ô tính năng cỡ khác nhau, ô lớn cam đặc mang hình lưới O-grid. */
+:root {
+  color-scheme: dark;
+  --bg: #15110e; --bg-2: #1f1915; --bg-3: #2a221c; --ink: #f6f0ea; --muted: #b5a99e; --line: rgba(255, 214, 180, .14);
+  --orange: #f97316; --orange-soft: #ffa45c; --on-orange: #1d0f05;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 17px/1.65 var(--body); overflow-x: clip; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--orange-soft); outline-offset: 3px; }
+.wrap { max-width: 1100px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3, p { margin: 0; }
+h1, h2 { font-family: var(--display); font-weight: 800; letter-spacing: -.025em; line-height: 1.06; text-wrap: balance; }
+h1 { font-size: clamp(2.9rem, 8.6vw, 6.2rem); }
+h2 { font-size: clamp(2.1rem, 5vw, 3.6rem); }
+h3 { font-family: var(--display); font-size: 1.2rem; font-weight: 500; line-height: 1.2; }
+em { font-style: normal; color: var(--orange); }
+.eyebrow { font: 500 .8rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--orange-soft); }
+section { padding-block: clamp(72px, 11vw, 120px); }
+
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 22px; position: relative; z-index: 2; }
+.brand { font: 800 1.25rem var(--display); text-decoration: none; }
+.bar-r { display: flex; align-items: center; gap: 18px; }
+.bar-r a { font-size: .92rem; color: var(--muted); text-decoration: none; transition: color .2s; }
+.bar-r a:hover { color: var(--ink); }
+.lang { display: flex; padding: 3px; border-radius: 999px; background: var(--bg-3); }
+.lang button { border: 0; padding: 4px 11px; border-radius: 999px; background: none; color: var(--muted); font: 500 .78rem var(--mono); cursor: pointer; }
+.lang button[aria-pressed="true"] { background: var(--orange); color: var(--on-orange); }
+
+.hero { position: relative; text-align: center; background: radial-gradient(70% 90% at 50% 100%, rgba(249, 115, 22, .24), transparent 70%); }
+#weave { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
+.hero-in { position: relative; display: grid; justify-items: center; gap: 24px; padding-block: clamp(44px, 8vw, 92px) clamp(44px, 6vw, 68px); }
+.lede { max-width: 54ch; color: var(--muted); font-size: 1.12rem; }
+.chain { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 12px; }
+.chain i { width: 22px; height: 2px; background: var(--orange); }
+
+.video { position: relative; z-index: 1; display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 18px;
+  background: radial-gradient(90% 120% at 50% 40%, #4a2a14, #17100b); color: var(--ink); text-decoration: none;
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, .5), 0 36px 100px -24px rgba(249, 115, 22, .45); }
+.video img, .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border: 0; }
+.play { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: 80px; height: 80px; border-radius: 50%;
+  background: var(--orange); display: grid; place-items: center; transition: scale .2s; }
+.play::before { content: ""; margin-left: 5px; border-style: solid; border-width: 13px 0 13px 21px;
+  border-color: transparent transparent transparent var(--on-orange); }
+.video:hover .play { scale: 1.08; }
+
+.idea { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 36px; margin: 52px 0 0; padding: 0; list-style: none; }
+.idea li { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.idea span { font: 800 2.6rem/1 var(--display); color: var(--orange); }
+.idea p { color: var(--muted); font-size: .97rem; }
+
+.bento { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 48px; }
+.tile { display: grid; gap: 8px; align-content: start; min-width: 0; padding: 22px; border-radius: 18px; background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--line); transition: translate .2s, box-shadow .2s; }
+.tile:hover { translate: 0 -3px; box-shadow: inset 0 0 0 1px rgba(249, 115, 22, .65); }
+.tile p { color: var(--muted); font-size: .94rem; }
+.tile svg.ic { width: 34px; height: 34px; margin-bottom: 6px; fill: none; stroke: var(--orange); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.big { grid-column: span 2; grid-row: span 2; background: var(--orange); color: var(--on-orange); box-shadow: none; align-content: space-between; gap: 18px; overflow: hidden; }
+.big:hover { box-shadow: none; }
+.big h3 { font-size: 1.9rem; font-weight: 800; letter-spacing: -.015em; }
+.big p { color: var(--on-orange); font-size: 1rem; }
+#ogrid { display: block; width: min(100%, 300px); max-width: 100%; aspect-ratio: 1; justify-self: center; fill: none; stroke: var(--on-orange); stroke-width: 1; }
+.wide { grid-column: span 2; background: linear-gradient(120deg, var(--bg-3), #4a2810); }
+
+.end { background: var(--orange); color: var(--on-orange); }
+.end .wrap { display: grid; justify-items: center; gap: 18px; text-align: center; }
+.end .eyebrow, .end em { color: var(--on-orange); }
+.end p { max-width: 56ch; }
+.facts { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 20px; font: 500 .84rem var(--mono); }
+.cta { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 8px; }
+.btn { padding: 12px 26px; border-radius: 999px; font-weight: 600; font-size: .95rem; text-decoration: none; background: var(--on-orange); color: var(--ink); }
+.btn:hover { background: #000; }
+.btn.ghost { background: none; color: var(--on-orange); box-shadow: inset 0 0 0 2px var(--on-orange); }
+.btn.ghost:hover { background: rgba(0, 0, 0, .1); }
+footer { padding-block: 26px; font-size: .86rem; color: var(--muted); text-align: center; }
+
+@media (max-width: 860px) { .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 680px) { .idea { grid-template-columns: minmax(0, 1fr); gap: 28px; } }
+@media (max-width: 460px) { .bento { grid-template-columns: minmax(0, 1fr); } .big, .wide { grid-column: auto; } .play { width: 62px; height: 62px; } .bar-r a { display: none; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="hero" id="top">
+  <canvas id="weave" aria-hidden="true"></canvas>
+  <div class="wrap bar">
+    <a class="brand" href="#top">TopoWeave</a>
+    <div class="bar-r">
+      <a href="https://github.com/Ga-Mo221/TopoWeave">GitHub ↗</a>
+      <div class="lang" role="group" aria-label="Language">
+        <button id="langEn" type="button" aria-pressed="true">EN</button>
+        <button id="langVi" type="button" aria-pressed="false">VI</button>
+      </div>
+    </div>
+  </div>
+  <div class="wrap hero-in">
+    <p class="eyebrow" data-t="kicker">Retopology add-on for Blender</p>
+    <h1 data-t="h1">Sketch the strokes.<br><em>Weave the mesh.</em></h1>
+    <p class="lede" data-t="lede">TopoWeave turns a few strokes on a 3D surface into an editable network and a connected quad mesh.</p>
+    <p class="eyebrow chain"><span data-t="c1">Strokes</span><i></i><span data-t="c2">Surface</span><i></i><span data-t="c3">Quads</span></p>
+    <a class="video" id="video" href="https://youtu.be/xLpNicr_PKk" aria-label="Play the TopoWeave video" style="margin-top:20px">
+      <img src="https://i.ytimg.com/vi/xLpNicr_PKk/maxresdefault.jpg" alt="" onerror="this.remove()">
+      <span class="play"></span>
+    </a>
+  </div>
+</header>
+
+<main>
+  <section class="wrap">
+    <p class="eyebrow" data-t="ideaK">The idea</p>
+    <h2 style="margin-top:14px" data-t="ideaH">Less vertex wrestling.<br><em>More thinking about form.</em></h2>
+    <ol class="idea">
+      <li><span>1</span><h3 data-t="i1h">Sketch the flow</h3><p data-t="i1p">A few deliberate strokes on the surface describe the structure you want.</p></li>
+      <li><span>2</span><h3 data-t="i2h">Stay in control</h3><p data-t="i2p">Strokes become a network of nodes and arcs. Edit it any time and the mesh follows.</p></li>
+      <li><span>3</span><h3 data-t="i3h">Weave the mesh</h3><p data-t="i3p">Each closed region becomes a patch, and subdivisions match so the whole mesh stays connected.</p></li>
+    </ol>
+  </section>
+
+  <section class="wrap" style="padding-top:0">
+    <p class="eyebrow" data-t="featK">Inside the tool</p>
+    <h2 style="margin-top:14px" data-t="featH">Everything a full model <em>needs.</em></h2>
+    <div class="bento">
+      <div class="tile big">
+        <svg id="ogrid" viewBox="0 0 200 200" aria-hidden="true"></svg>
+        <div><h3 data-t="f1h">Mesh patterns</h3><p data-t="f1p" style="margin-top:6px">O-grid, transition, fillet and patterns you save yourself. Pick the flow that fits each region.</p></div>
+      </div>
+      <div class="tile"><svg class="ic" viewBox="0 0 32 32"><ellipse cx="9" cy="16" rx="4" ry="9"/><ellipse cx="23" cy="16" rx="4" ry="9"/><path d="M9 7h14M9 25h14M13 16h6"/></svg><h3 data-t="f2h">Cylinder &amp; Bridge</h3><p data-t="f2p">Stroke across an arm or leg to ring it, then bridge two rings.</p></div>
+      <div class="tile"><svg class="ic" viewBox="0 0 32 32"><path d="M5 11h22M5 21h22M11 5c2 7 2 15 0 22M21 5c-2 7-2 15 0 22"/></svg><h3 data-t="f3h">Mesh tweak</h3><p data-t="f3p">Grab, Smooth and Relax right on the generated mesh.</p></div>
+      <div class="tile wide"><svg class="ic" viewBox="0 0 32 32"><path d="M16 4l2.8 8.2L27 15l-8.2 2.8L16 26l-2.8-8.2L5 15l8.2-2.8z"/></svg><h3 data-t="f4h">Auto Retopo</h3><p data-t="f4p">Builds a starting network from QuadriFlow, so you only fix what is wrong by hand.</p></div>
+      <div class="tile"><svg class="ic" viewBox="0 0 32 32"><circle cx="14" cy="14" r="8"/><path d="M20 20l7 7M14 10v5M14 18v.5"/></svg><h3 data-t="f5h">Issue review</h3><p data-t="f5p">Highlights missing faces, skewed quads and bad poles, one by one.</p></div>
+      <div class="tile"><svg class="ic" viewBox="0 0 32 32"><path d="M5 5h22v22H5z"/><path d="M5 18c6-1 7-7 13-13M15 27c1-6 7-7 12-9" stroke-dasharray="3 3"/></svg><h3 data-t="f6h">UV-aware</h3><p data-t="f6p">Turn UV seams into strokes, preview UVs, copy them on Generate.</p></div>
+      <div class="tile"><svg class="ic" viewBox="0 0 32 32"><path d="M21 5l6 6L12 26l-7 1 1-7z"/><path d="M18 8l6 6"/></svg><h3 data-t="f7h">Tablet-friendly</h3><p data-t="f7p">A virtual wheel replaces every scroll action when you use a pen.</p></div>
+      <div class="tile"><svg class="ic" viewBox="0 0 32 32"><path d="M6 16a10 10 0 1 0 3-7"/><path d="M6 5v6h6M16 10v6l4 3"/></svg><h3 data-t="f8h">Auto backup</h3><p data-t="f8p">Your network is also kept outside the .blend file and can be restored.</p></div>
+    </div>
+  </section>
+
+  <section class="end">
+    <div class="wrap">
+      <p class="eyebrow" data-t="endK">Status</p>
+      <h2 data-t="endH">Still being woven.<br>Follow it on GitHub.</h2>
+      <p data-t="endP">TopoWeave is in internal use and has no public release yet.</p>
+      <p class="facts"><span data-t="s1">Version 0.1.0</span><span data-t="s2">Tested on Blender 5.0.1</span><span data-t="s3">Interface in Vietnamese</span></p>
+      <div class="cta">
+        <a class="btn" href="https://github.com/Ga-Mo221/TopoWeave" data-t="b1">Open GitHub</a>
+        <a class="btn ghost" href="https://youtu.be/xLpNicr_PKk" data-t="b2">Watch on YouTube</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap" data-t="foot">TopoWeave is developed by Nguyễn Văn Hậu with the help of Claude Opus 5.5.</div>
+</footer>
+
+<script>
+(() => {
+  // Ngôn ngữ: tiếng Anh nằm sẵn trong HTML, đây là bản tiếng Việt.
+  const VI = {
+    kicker: "Add-on retopology cho Blender",
+    h1: "Vẽ theo dòng chảy.<br><em>Dệt nên lưới.</em>",
+    lede: "TopoWeave biến vài nét vẽ trên bề mặt 3D thành một mạng đường có thể chỉnh sửa và một lưới quad liền mạch.",
+    c1: "Nét vẽ", c2: "Bề mặt", c3: "Lưới quad",
+    ideaK: "Ý tưởng", ideaH: "Bớt vật lộn với đỉnh.<br><em>Tập trung vào hình khối.</em>",
+    i1h: "Phác dòng chảy", i1p: "Vài nét dứt khoát trên bề mặt mesh là đủ để mô tả cấu trúc bạn muốn.",
+    i2h: "Giữ nguyên quyền sửa", i2p: "Nét trở thành mạng node và cung. Bạn sửa được bất cứ lúc nào, lưới cập nhật theo.",
+    i3h: "Dệt thành lưới", i3p: "Mỗi vùng khép kín thành một patch, số chia tự khớp để toàn bộ lưới nối liền.",
+    featK: "Bên trong công cụ", featH: "Đủ cho cả một <em>mô hình.</em>",
+    f1h: "Mẫu lưới", f1p: "O-grid, chuyển tiếp, góc bo và mẫu do bạn tự lưu. Chọn dòng chảy hợp với từng vùng.",
+    f2h: "Cylinder và Bridge", f2p: "Kéo một nét qua tay, chân để có vòng quanh chi, rồi nối hai vòng.",
+    f3h: "Chỉnh lưới", f3p: "Grab, Smooth, Relax trực tiếp trên lưới đã Generate.",
+    f4h: "Auto Retopo", f4p: "Dựng sẵn network từ QuadriFlow, bạn chỉ cần sửa tay chỗ chưa đúng.",
+    f5h: "Duyệt lỗi", f5p: "Tô mặt thiếu lưới, lưới méo, cực xấu và đưa bạn tới từng chỗ.",
+    f6h: "Theo đường cắt UV", f6p: "Biến đường cắt thành nét, xem trước UV, chép UV khi Generate.",
+    f7h: "Hợp với bảng vẽ", f7p: "Bánh xe ảo thay mọi thao tác lăn chuột khi dùng bút.",
+    f8h: "Sao lưu tự động", f8p: "Network được giữ thêm ngoài file .blend và khôi phục được.",
+    endK: "Trạng thái", endH: "Đang tiếp tục dệt.<br>Theo dõi trên GitHub.",
+    endP: "TopoWeave đang ở giai đoạn dùng nội bộ, chưa có bản phát hành công khai.",
+    s1: "Bản 0.1.0", s2: "Đã thử trên Blender 5.0.1", s3: "Giao diện tiếng Việt",
+    b1: "Mở GitHub", b2: "Xem trên YouTube",
+    foot: "TopoWeave do Nguyễn Văn Hậu phát triển với sự hỗ trợ của Claude Opus 5.5.",
+  };
+  const nodes = [...document.querySelectorAll("[data-t]")];
+  const EN = Object.fromEntries(nodes.map((n) => [n.dataset.t, n.innerHTML]));
+  const btn = { en: document.getElementById("langEn"), vi: document.getElementById("langVi") };
+  function setLang(l) {
+    const dict = l === "vi" ? VI : EN;
+    nodes.forEach((n) => { n.innerHTML = dict[n.dataset.t]; });
+    document.documentElement.lang = l;
+    btn.en.setAttribute("aria-pressed", l === "en");
+    btn.vi.setAttribute("aria-pressed", l === "vi");
+    try { localStorage.setItem("tw-lang", l); } catch {}
+  }
+  btn.en.addEventListener("click", () => setLang("en"));
+  btn.vi.addEventListener("click", () => setLang("vi"));
+  try { if (localStorage.getItem("tw-lang") === "vi") setLang("vi"); } catch {}
+
+  const video = document.getElementById("video");
+  // Khung Artifact và file:// không phát được iframe YouTube: giữ liên kết mở sang YouTube.
+  const canEmbed = /^https?:$/.test(location.protocol) && !/claude/.test(location.hostname);
+  video.addEventListener("click", (e) => {
+    if (!canEmbed) return;
+    e.preventDefault();
+    const f = document.createElement("iframe");
+    f.src = "https://www.youtube-nocookie.com/embed/xLpNicr_PKk?autoplay=1&rel=0";
+    f.title = "TopoWeave video";
+    f.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+    f.referrerPolicy = "strict-origin-when-cross-origin";
+    f.allowFullscreen = true;
+    const box = document.createElement("div");
+    box.className = "video";
+    box.id = "video";
+    box.style.marginTop = "20px";
+    box.append(f);
+    video.replaceWith(box);
+  });
+
+  // Hình O-grid trong ô Mẫu lưới: vòng tròn trong hình vuông, nội suy giữa hai biên.
+  const N = 8, RINGS = 5, seg = [];
+  const outer = (a) => { const m = Math.max(Math.abs(Math.cos(a)), Math.abs(Math.sin(a))); return [Math.cos(a) / m * 92, Math.sin(a) / m * 92]; };
+  const inner = (a) => [Math.cos(a) * 42, Math.sin(a) * 42];
+  const at = (a, t) => { const o = outer(a), i = inner(a); return [100 + i[0] + (o[0] - i[0]) * t, 100 + i[1] + (o[1] - i[1]) * t]; };
+  for (let r = 0; r <= RINGS; r++) {
+    let d = "";
+    for (let s = 0; s <= 96; s++) { const p = at(s / 96 * 2 * Math.PI + Math.PI / 4, r / RINGS); d += `${s ? "L" : "M"}${p[0].toFixed(1)} ${p[1].toFixed(1)}`; }
+    seg.push(d);
+  }
+  for (let k = 0; k < N * 4; k++) {
+    const a = k / (N * 4) * 2 * Math.PI + Math.PI / 4, p = at(a, 0), q = at(a, 1);
+    seg.push(`M${p[0].toFixed(1)} ${p[1].toFixed(1)}L${q[0].toFixed(1)} ${q[1].toFixed(1)}`);
+  }
+  for (let i = 1; i < N; i++) {           // lưới 8 × 8 trong lõi
+    const t = i / N * 2 - 1, sq = (u) => 42 * Math.sqrt(Math.max(0, 1 - u * u)), v = t * 42;
+    const h = sq(t);
+    seg.push(`M${100 - h} ${100 + v}L${100 + h} ${100 + v}M${100 + v} ${100 - h}L${100 + v} ${100 + h}`);
+  }
+  document.getElementById("ogrid").innerHTML = seg.map((d) => `<path d="${d}"/>`).join("");
+
+  // Lưới dệt sau tiêu đề: hai họ đường cong trên một mặt phồng, mờ dần về giữa và ra rìa.
+  const cv = document.getElementById("weave");
+  const ctx = cv.getContext("2d");
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const L = 34;
+  function point(u, v, W, H) {
+    const bx = u - .5, by = v - .5, b = 1 - Math.min(1, (bx * bx + by * by) * 2.2);
+    return [W * (-.08 + 1.16 * u) + bx * W * .34 * b, H * (-.08 + 1.16 * v) + by * H * .34 * b + H * .03 * Math.sin(u * 6.3)];
+  }
+  function draw(t) {
+    const r = Math.min(devicePixelRatio || 1, 2), W = cv.clientWidth, H = cv.clientHeight;
+    if (cv.width !== Math.round(W * r)) { cv.width = Math.round(W * r); cv.height = Math.round(H * r); }
+    ctx.setTransform(r, 0, 0, r, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(249, 115, 22, .28)";
+    for (let fam = 0; fam < 2; fam++) for (let i = 0; i <= L; i++) {
+      const k = i / L, end = Math.min(1, t * 1.6 - (fam ? 1 - k : k) * .6);
+      if (end <= 0) continue;
+      ctx.beginPath();
+      for (let s = 0; s <= 40; s++) {
+        const q = s / 40 * end, [x, y] = fam ? point(k, q, W, H) : point(q, k, W, H);
+        s ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.stroke();
+    }
+    ctx.globalCompositeOperation = "destination-in";
+    const g = ctx.createRadialGradient(W / 2, H * .3, Math.min(W, H) * .22, W / 2, H * .3, Math.max(W * .62, H * .6));
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(.55, "rgba(0,0,0,.9)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = "source-over";
+  }
+  if (still) draw(1);
+  else {
+    const t0 = performance.now();
+    (function step(now) {
+      const t = Math.min(1, (now - t0) / 1800);
+      draw(1 - (1 - t) ** 3);
+      if (t < 1) requestAnimationFrame(step);
+    })(t0);
+  }
+  addEventListener("resize", () => draw(1));
+})();
+</script>
+</body>
+</html>
