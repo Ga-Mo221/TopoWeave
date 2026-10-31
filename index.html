@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>TopoWeave</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2315110e'/%3E%3Cpath d='M5 8l5.5 16L16 12l5.5 12L27 8' fill='none' stroke='%23f97316' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="TopoWeave is a retopology add-on for Blender: sketch strokes on a mesh and get a clean quad layout.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,7 +36,8 @@ em { font-style: normal; color: var(--orange); }
 section { padding-block: clamp(72px, 11vw, 120px); }
 
 .bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 22px; position: relative; z-index: 2; }
-.brand { font: 800 1.25rem var(--display); text-decoration: none; }
+.brand { display: inline-flex; align-items: center; gap: 9px; font: 800 1.25rem var(--display); text-decoration: none; }
+.logo { width: 30px; height: 30px; fill: none; stroke: var(--orange); stroke-width: 4.2; stroke-linecap: round; stroke-linejoin: round; }
 .bar-r { display: flex; align-items: center; gap: 18px; }
 .bar-r a { font-size: .92rem; color: var(--muted); text-decoration: none; transition: color .2s; }
 .bar-r a:hover { color: var(--ink); }
@@ -99,7 +101,7 @@ footer { padding-block: 26px; font-size: .86rem; color: var(--muted); text-align
 <header class="hero" id="top">
   <canvas id="weave" aria-hidden="true"></canvas>
   <div class="wrap bar">
-    <a class="brand" href="#top">TopoWeave</a>
+    <a class="brand" href="#top"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><path d="M3 7l6.5 18L16 11l6.5 14L29 7"/></svg>TopoWeave</a>
     <div class="bar-r">
       <a href="https://github.com/Ga-Mo221/TopoWeave">GitHub ↗</a>
       <div class="lang" role="group" aria-label="Language">
