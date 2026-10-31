@@ -207,6 +207,10 @@ TopoWeave đang ở **bản 0.1.0, dùng nội bộ**. Nên biết trước khi 
 
 Tệp `.blend` cũ của SketchRetopo mở được và tự nâng định dạng. Chiều ngược lại thì không: SketchRetopo không đọc được dữ liệu đã lưu bằng TopoWeave.
 
+## Tác giả
+
+TopoWeave do **Nguyễn Văn Hậu** phát triển với sự hỗ trợ của Claude Opus 5.5.
+
 ## Giấy phép
 
 Add-on khai báo [GPL-3.0-or-later](https://www.gnu.org/licenses/gpl-3.0.html) trong manifest.
